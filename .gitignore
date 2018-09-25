@@ -1,0 +1,12 @@
+CrossMonitor.Client.Tests/Debug/
+CrossMonitor.Client.Tests/x64/
+CrossMonitor.Client/00000.log
+CrossMonitor.Client/CrossMonitor.Client.vcxproj.user
+CrossMonitor.Client/Debug/
+CrossMonitor.Shared/Debug/
+CrossMonitor.VC.db
+CrossMonitor.Shared/log.cpp
+packages/
+Debug/
+Release/
+.vc/
