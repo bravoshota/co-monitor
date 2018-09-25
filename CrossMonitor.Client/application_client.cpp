@@ -123,7 +123,7 @@ void application::run() {
 			using namespace web;
 			auto collected_data = collect_data();
 			const json::value jsondata(data_to_json(collected_data));
-			LOG(info) << jsondata.to_string() << endl;
+			LOG(info) << jsondata.serialize();
 		}
 		catch (const std::exception& e) {
 			LOG(error) << "Failed to collect and send data to server: "

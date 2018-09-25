@@ -18,7 +18,7 @@ namespace po = boost::program_options;
 #define LOG CROSSOVER_MONITOR_LOG
 
 int main(int argc, char* argv[]) {
-	log::init();	
+	log::init();
 	LOG(info) << "Crossover Monitor Client Started";
 	po::options_description description;
 	description.add_options()
@@ -49,7 +49,13 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (vm.count("logfile")) {
-		log::set_file(vm["logfile"].as<string>());
+		const string &logfileStr = vm["logfile"].as<string>();
+		if (logfileStr.empty()) {
+			cout << "Expected value for logfile parameter" << endl;
+			return EXIT_FAILURE;
+		}
+
+		log::set_file(logfileStr);
 	}
 
 	try {		
