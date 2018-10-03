@@ -40,11 +40,9 @@ BOOL WINAPI handler_helper(DWORD type) {
 }
 
 void set_termination_handler(const std::function<void()>& handler) noexcept {
-	lock_guard<mutex> lock(mutex_);
-	handler_ = handler;
-
 	static once_flag once;
 	call_once(once, [&handler] {
+		handler_ = handler;
 		if (!SetConsoleCtrlHandler(&handler_helper, TRUE)) {
 			LOG(error) << "Failed to set termination handler, code: "
 					   << GetLastError();

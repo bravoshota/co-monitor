@@ -106,9 +106,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="data.hpp" />
     <ClInclude Include="log.hpp" />
     <ClInclude Include="os.hpp" />
@@ -122,6 +119,9 @@
     <ClCompile Include="os_win.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="utils_win.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\Readme.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

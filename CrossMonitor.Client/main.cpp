@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 	po::options_description description;
 	description.add_options()
 		("help", "Show this message")
-		("minutes", po::value<unsigned>()->default_value(5), "Period between reports in minutes")
+		("minutes", po::value<unsigned>()->default_value(5), "Period between reports in seconds")
 		("logfile", po::value<string>(), "Log file");
 
 	po::variables_map vm;
@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
 		log::set_file(logfileStr);
 	}
 
-	try {		
+	try {	
 		client::application app(chrono::minutes(vm["minutes"].as<unsigned>()));
 		
 		os::set_termination_handler([&app]() {

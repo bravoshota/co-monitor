@@ -2,9 +2,18 @@
 
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace crossover {
 namespace monitor {
+
+template<typename T>
+struct IO_stat {
+	T bytes_read;
+	T bytes_written;
+	wchar_t partition_name;
+};
+typedef std::vector<IO_stat<unsigned>> IO_stats;
 
 /**
  * Class representing the data sent and received 
@@ -19,12 +28,20 @@ public:
 	 * @param memory_percent Physical memory use percentage (0 to 100).
 	 * @param process_count Number of processes (1 to UINT_MAX).
 	 */
-	data(float cpu_percent, float memory_percent, unsigned process_count) {
+	data(	float cpu_percent,
+			float memory_percent,
+			unsigned process_count,
+			const IO_stats &io_stats) {
 		set_cpu_percent(cpu_percent);
 		set_memory_percent(memory_percent);
 		set_process_count(process_count);
+		set_io_stats(io_stats);
 	}
-	data(const data& other) = default;
+
+	data()
+		: cpu_percent_(-1.f) {
+	}
+
 	data& operator=(const data& rhs) = default;	
 
 	/**
@@ -36,7 +53,7 @@ public:
 			throw std::invalid_argument(
 				"cpu_percent out of range: " + std::to_string(cpu_percent));
 		}
-		cpu_percent_ = cpu_percent;
+		cpu_percent_ = cpu_percent_ < 0.f ? 0.f : cpu_percent;
 	}
 	float get_cpu_percent() const noexcept {
 		return cpu_percent_;
@@ -71,10 +88,33 @@ public:
 		return process_count_;
 	}
 
+	/**
+	* Setter. Throws std::invalid_argument if the argument is out of range.
+	* @param io_stats Bytes read and bytes written (0 to unsigned-max).
+	*/
+	void set_io_stats(const IO_stats &io_stats) {
+		for (auto &stat : io_stats) {
+			if (stat.bytes_read < 0) {
+				throw std::invalid_argument("bytes_read must be positive number");
+			}
+			if (stat.bytes_written < 0) {
+				throw std::invalid_argument("bytes_written must be positive number");
+			}
+		}
+		io_stats_ = io_stats;
+	}
+	const IO_stats &get_io_stats() const noexcept {
+		return io_stats_;
+	}
+	IO_stats &get_io_stats_for_edit() noexcept {
+		return io_stats_;
+	}
+
 private:
 	float cpu_percent_;
 	float memory_percent_;
 	unsigned process_count_;
+	IO_stats io_stats_;
 }; //struct data
 
 } //namespace monitor

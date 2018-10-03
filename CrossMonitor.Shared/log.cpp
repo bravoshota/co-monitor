@@ -2,8 +2,13 @@
 
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/utility/setup/console.hpp>
+//#include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/expressions/formatters/format.hpp>
-#include <iostream>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/support/date_time.hpp>
+//#include <boost/date_time/posix_time/posix_time_types.hpp>
+
 
 #define LOG CROSSOVER_MONITOR_LOG
 
@@ -13,21 +18,20 @@ namespace log {
 
 using namespace boost::log;
 
+const formatter logFmt = expressions::format("<%1%> %2%")
+//	% expressions::format_date_time<boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d %H:%M:%S")
+	% trivial::severity
+	% expressions::smessage;
+
 void init() noexcept {
-	add_console_log(std::clog);
+	//add_common_attributes();
+	auto file_logger = add_console_log(std::clog);
+	file_logger->set_formatter(logFmt);
 }
 void set_file(const std::string& filename) noexcept {
 	try {
-		//formatter logFmt = expressions::format("%1%") % expressions::smessage;
-
-		auto file_logger = add_file_log
-		(
-			keywords::file_name = filename,
-			keywords::rotation_size = 10 * 1024 * 1024,
-			keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0)
-		);
-
-		//file_logger->set_formatter(logFmt);
+		auto file_logger = add_file_log(filename);
+		file_logger->set_formatter(logFmt);
 		file_logger->locked_backend()->auto_flush(true);
 
 		LOG(info) << "Added file log: " << filename;

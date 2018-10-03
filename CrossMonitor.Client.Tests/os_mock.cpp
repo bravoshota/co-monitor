@@ -9,6 +9,14 @@ namespace os {
 unsigned int _process_count = 0;
 float _cpu_use_percent = 0;
 float _memory_use_percent = 0;
+IO_stats _disk_io_stats;
+
+bool init_cpu_use_percent() noexcept {
+	return true;
+}
+
+void init_disk_io_stats() noexcept {
+}
 
 void set_process_count(unsigned int n) {
 	_process_count = n;
@@ -32,6 +40,13 @@ void set_memory_use_percent(float percent) {
 
 float memory_use_percent() noexcept {
 	return _memory_use_percent;
+}
+
+IO_stats disk_io_stats() noexcept {
+	return _disk_io_stats;
+}
+
+void uninit_cpu_use_percent() noexcept {
 }
 
 } //namespace os
