@@ -7,7 +7,6 @@
 
 #include <cpprest/json.h>
 #include <cpprest/http_client.h>
-#include <cpprest/asyncrt_utils.h>
 
 #include <atomic>
 #include <string>
@@ -24,32 +23,71 @@ namespace client {
 
 using namespace web;
 
-struct application::impl final {
+class application::impl final {
 private:
-	data collected_data_;
+	atomic<bool> m_stop;
+	atomic<bool> m_running;
+	const std::chrono::minutes m_period;
+	OnCollectedDataHandler m_onCollectedData;
+	data m_collectedData;
+
 public:
-	atomic<bool> stop = false;
-	atomic<bool> running = false;
-
-	const data &collected_data() {
-		return collected_data_;
+	impl(const chrono::minutes& period, OnCollectedDataHandler onCollectedData)
+		: m_stop (false)
+		, m_running(false)
+		, m_period(period)
+		, m_onCollectedData(onCollectedData) {
 	}
 
-	void init() {
-		os::init_cpu_use_percent();
-		os::init_disk_io_stats();
-	}
-
+private:
 	void collect_data() {
-		collected_data_.set_cpu_percent(os::cpu_use_percent());
-		collected_data_.set_memory_percent(os::memory_use_percent());
-		collected_data_.set_process_count(os::process_count());
+		m_collectedData.set_cpu_percent(os::cpu_use_percent());
+		m_collectedData.set_process_count(os::process_count());
+		m_collectedData.set_memory_percent(os::memory_use_percent());
 
-		// avoid copying array:
-		os::disk_io_stats(collected_data_.get_io_stats_for_edit());
+		// avoid copying array
+		os::disk_io_stats(m_collectedData.get_io_stats_for_edit());
 	}
 
-	void send_data(const string& url, const string& key) {
+public:
+	void run() {
+		if (m_running) {
+			LOG(warning) << "application::run already running, ignoring call";
+			return;
+		}
+
+		m_running = true;
+
+		LOG(info) << "Starting application loop";
+
+		const chrono::milliseconds resolution(100);
+
+		do {
+			try {
+				collect_data();
+				m_onCollectedData(m_collectedData.to_json());
+			}
+			catch (const std::exception& e) {
+				LOG(error) << "Failed to collect and send data to server: "
+					<< e.what();
+			}
+		} while (utils::interruptible_sleep(m_period, resolution, m_stop) !=
+			utils::interruptible_sleep_result::interrupted);
+
+		m_stop = false;
+		m_running = false;
+
+		LOG(info) << "Exiting application loop";
+	}
+
+	void stop() noexcept {
+		if (m_running) {
+			LOG(info) << "Stop requested, waiting for tasks to finish";
+			m_stop = true;
+		}
+	}
+
+	void send_data(const string& url, const string& key) const {
 		const uri url_full(utility::conversions::to_string_t(url));
 
 		uri_builder builder;
@@ -68,13 +106,12 @@ public:
 		LOG(info) << "Data sent successfully to " << url;
 	}
 
-	void report_sent_callback(const data& sent_data)
-	{
+	void report_sent_callback(const data& sent_data) const {
 		static unsigned reports_sent = 0;
 		static float latest_cpu_values[10] = { 0 };
 		static mutex m;
 
-		lock_guard<mutex> l(m);
+		lock_guard<mutex> lock(m);
 
 		latest_cpu_values[reports_sent % 10] = sent_data.get_cpu_percent();
 
@@ -90,79 +127,40 @@ public:
 	}
 };
 
-application::application(const std::chrono::minutes& period)
-	: pimpl_(new impl)
-	, period_(period) {
-	if (period_ < chrono::minutes(1)) {
+void application::collectedDataDefaultHandler(const web::json::value &collected_data) {
+	LOG(info) << collected_data.serialize();
+}
+
+application::application(const chrono::minutes& period, OnCollectedDataHandler onCollectedData)
+	: m_impl(new impl(period, onCollectedData)) {
+	if (period < chrono::minutes(1)) {
 		throw invalid_argument("Invalid arguments to application constructor");
 	}
+
+	// initialize CPU and HDD performance statistics queries at the beginning
+	os::init_cpu_use_percent();
+	os::init_disk_io_stats();
+
+	LOG(info) << "application constructed successfully";
 }
 
 application::~application() {
+	// CPU query needs this call (PdhCloseQuery)
+	os::uninit_cpu_use_percent();
+	LOG(info) << "application destructed successfully";
 }
 
 void application::run() {
-	if (pimpl_->running) {
-		LOG(warning) << "application::run already running, ignoring call";
-		return;
-	}
-
-	pimpl_->running = true;
-
-	LOG(info) << "Starting application loop";
-	utils::scope_exit exit_guard([this] {
-		pimpl_->running = false;
-		pimpl_->stop = false;
-		os::uninit_cpu_use_percent();
-		LOG(info) << "Exiting application loop";
-	});
-
-	pimpl_->init();
-	const chrono::milliseconds resolution(100);
-
-	do {
-		try {
-			pimpl_->collect_data();
-			json::value jsondata;
-			jsondata[L"cpu_percent"] = pimpl_->collected_data().get_cpu_percent();
-			jsondata[L"memory_percent"] = pimpl_->collected_data().get_memory_percent();
-			jsondata[L"process_count"] = pimpl_->collected_data().get_process_count();
-
-			std::vector<web::json::value> parts;
-			for (const auto &io_stat : pimpl_->collected_data().get_io_stats()) {
-				web::json::value part_details;
-				part_details[L"bytes_read"] = io_stat.bytes_read;
-				part_details[L"bytes_written"] = io_stat.bytes_written;
-
-				web::json::value part;
-				std::wstring str(&io_stat.partition_name, 1);
-				part[str] = part_details;
-
-				parts.push_back(part);
-			}
-			if(!parts.empty()) {
-				jsondata[L"volumme_io"] = web::json::value::array(parts);
-			}
-
-			// as my point of view I'd add serialize() method to data class
-			// to avoid above 4 lines.
-			// but in readme is requested to refactor only this class.
-			LOG(info) << jsondata.serialize();
-		}
-		catch (const std::exception& e) {
-			LOG(error) << "Failed to collect and send data to server: "
-				<< e.what();
-		}
-	} while (utils::interruptible_sleep(period_, resolution, pimpl_->stop) !=
-		utils::interruptible_sleep_result::interrupted);
-
+	m_impl->run();
 }
 
 void application::stop() noexcept {
-	if (pimpl_->running) {
-		LOG(info) << "Stop requested, waiting for tasks to finish";
-		pimpl_->stop = true;
-	}
+	m_impl->stop();
+
+	// it is needed if console is terminated via close (red) button
+	// because application instance is not destructing that case.
+	// the extra call of this function is safe:
+	os::uninit_cpu_use_percent();
 }
 
 } //namespace client

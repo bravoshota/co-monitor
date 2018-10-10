@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
 		log::set_file(logfileStr);
 	}
 
-	try {	
+	try {
 		client::application app(chrono::minutes(vm["minutes"].as<unsigned>()));
 		
 		os::set_termination_handler([&app]() {

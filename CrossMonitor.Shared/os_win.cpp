@@ -17,10 +17,12 @@ namespace os {
 static mutex mutex_;
 function<void()> handler_;
 
-BOOL WINAPI handler_helper(DWORD type) {
+static BOOL WINAPI handler_helper(DWORD type) {
 	switch (type) {
 	case CTRL_C_EVENT:
 	case CTRL_CLOSE_EVENT:
+	case CTRL_BREAK_EVENT:
+	case CTRL_LOGOFF_EVENT:
 	case CTRL_SHUTDOWN_EVENT:
 		try {
 			lock_guard<mutex> lock(mutex_);

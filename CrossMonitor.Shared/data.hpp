@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <cpprest/json.h>
+
 namespace crossover {
 namespace monitor {
 
@@ -103,11 +105,48 @@ public:
 		}
 		io_stats_ = io_stats;
 	}
+
+	/**
+	* Getter. get IO statistics.
+	*/
 	const IO_stats &get_io_stats() const noexcept {
 		return io_stats_;
 	}
+
+	/**
+	* Getter. get IO statistics for edit.
+	*/
 	IO_stats &get_io_stats_for_edit() noexcept {
 		return io_stats_;
+	}
+
+	/**
+	* convert data into JSON format.
+	*/
+	web::json::value to_json() const {
+		web::json::value out;
+		out[L"cpu_percent"] = cpu_percent_;
+		out[L"process_count"] = process_count_;
+		out[L"memory_percent"] = memory_percent_;
+
+		std::vector<web::json::value> parts;
+		for (const auto &io_stat : io_stats_) {
+			web::json::value part_details;
+			part_details[L"bytes_read"] = io_stat.bytes_read;
+			part_details[L"bytes_written"] = io_stat.bytes_written;
+
+			web::json::value part;
+			std::wstring str(&io_stat.partition_name, 1);
+			part[str] = part_details;
+
+			parts.push_back(part);
+		}
+
+		if (!parts.empty()) {
+			out[L"volumme_io"] = web::json::value::array(parts);
+		}
+
+		return out;
 	}
 
 private:

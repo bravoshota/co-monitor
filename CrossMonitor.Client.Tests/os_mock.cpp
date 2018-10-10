@@ -42,8 +42,12 @@ float memory_use_percent() noexcept {
 	return _memory_use_percent;
 }
 
-IO_stats disk_io_stats() noexcept {
-	return _disk_io_stats;
+void set_disk_io_stats(const IO_stats &io_stats) {
+	_disk_io_stats = io_stats;
+}
+
+void disk_io_stats(IO_stats &io_stats) noexcept {
+	io_stats = _disk_io_stats;
 }
 
 void uninit_cpu_use_percent() noexcept {

@@ -20,7 +20,7 @@ namespace monitor {
 namespace client {
 namespace os {
 
-PDH_HQUERY query;
+PDH_HQUERY query = NULL;
 PDH_HCOUNTER cpu_counter;
 std::vector<IO_stat<__int64>> volumes_data;
 
@@ -59,7 +59,6 @@ unsigned process_count() noexcept {
 bool init_cpu_use_percent() noexcept {
 	PDH_STATUS status;
 	
-	query = NULL;
 	status = PdhOpenQuery(NULL, NULL, &query);
 	if (status != ERROR_SUCCESS) {
 		LOG(error) << "PdhOpenQuery returned error code: " << status;
@@ -177,8 +176,8 @@ void disk_io_stats(IO_stats &io_stats) noexcept {
 		else {
 			res_data.bytes_read = static_cast<unsigned>(disk_info.BytesRead.QuadPart - single_volume_data.bytes_read);
 			res_data.bytes_written = static_cast<unsigned>(disk_info.BytesWritten.QuadPart - single_volume_data.bytes_written);
-			io_stats.push_back(std::move(res_data));
 		}
+		io_stats.push_back(std::move(res_data));
 		single_volume_data.bytes_read = disk_info.BytesRead.QuadPart;
 		single_volume_data.bytes_written = disk_info.BytesWritten.QuadPart;
 	}
