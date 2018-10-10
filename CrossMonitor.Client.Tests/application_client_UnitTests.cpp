@@ -38,6 +38,54 @@ namespace CrossMonitorClientTests
 			});
 		}
 
+		TEST_METHOD(DataToJson)
+		{
+			const crossover::monitor::data &original_data = getData();
+			web::json::value converted_json = original_data.to_json();
+
+			Assert::IsTrue(converted_json.is_object());
+
+			const web::json::object &obj = converted_json.as_object();
+			Assert::AreEqual(obj.size(), 4u);
+
+			// keys should be in alphabetical order
+			auto iter = obj.cbegin();
+			Assert::AreEqual(iter->first, std::wstring(L"cpu_percent"));
+			Assert::AreEqual(iter->second.as_double(), static_cast<double>(original_data.get_cpu_percent()));
+			++iter;
+			Assert::AreEqual(iter->first, std::wstring(L"memory_percent"));
+			Assert::AreEqual(iter->second.as_double(), static_cast<double>(original_data.get_memory_percent()));
+			++iter;
+			Assert::AreEqual(iter->first, std::wstring(L"process_count"));
+			Assert::AreEqual(iter->second.as_integer(), static_cast<int>(original_data.get_process_count()));
+			++iter;
+			Assert::AreEqual(iter->first, std::wstring(L"volumme_io"));
+			Assert::IsTrue(iter->second.is_array());
+
+			// now check the conversion of volume IO statistics in details
+			const auto &arr_orig = original_data.get_io_stats();
+			web::json::array arr_conv = iter->second.as_array();
+			Assert::AreEqual(arr_conv.size(), arr_orig.size());
+
+			// and for every record
+			for (size_t i = 0; i < arr_conv.size(); ++i) {
+				Assert::IsTrue(arr_conv[i].is_object());
+				const web::json::object &obj1 = arr_conv[i].as_object();
+				Assert::IsTrue(obj1.size() == 1);
+				auto iter1 = obj1.cbegin();
+				Assert::AreEqual(std::wstring(&arr_orig[i].partition_name, 1), iter1->first);
+				Assert::IsTrue(iter1->second.is_object());
+				const web::json::object &obj2 = iter1->second.as_object();
+				Assert::AreEqual(obj2.size(), 2u);
+				auto iter2 = obj2.cbegin();
+				Assert::AreEqual(iter2->first, std::wstring(L"bytes_read"));
+				Assert::AreEqual(iter2->second.as_integer(), static_cast<int>(arr_orig[i].bytes_read));
+				++iter2;
+				Assert::AreEqual(iter2->first, std::wstring(L"bytes_written"));
+				Assert::AreEqual(iter2->second.as_integer(), static_cast<int>(arr_orig[i].bytes_written));
+			}
+		}
+
 		TEST_METHOD(CheckCollectData)
 		{
 			using namespace crossover::monitor;
@@ -68,35 +116,6 @@ namespace CrossMonitorClientTests
 				Logger::WriteMessage(str);
 
 				Assert::AreEqual(collected_str, expected_str);
-
-				/*
-				Logger::WriteMessage(collected_data.serialize().c_str());
-
-				Assert::IsTrue(collected_data.is_object());
-
-				const web::json::object &obj = collected_data.as_object();
-				Assert::AreEqual(obj.size(), 4u);
-				
-				auto iter = obj.cbegin();
-				Assert::AreEqual(iter->first, std::wstring(L"cpu_percent"));
-				Assert::AreEqual(iter->second.as_double(), static_cast<double>(1.f));
-				++iter;
-				Assert::AreEqual(iter->first, std::wstring(L"process_count"));
-				Assert::AreEqual(iter->second.as_integer(), 34);
-				++iter;
-				Assert::AreEqual(iter->first, std::wstring(L"memory_percent"));
-				Assert::AreEqual(iter->second.as_double(), static_cast<double>(55.f));
-				++iter;
-				Assert::AreEqual(iter->first, std::wstring(L"volumme_io"));
-				Assert::IsTrue(iter->second.is_array());
-
-				const web::json::array &arr = iter->second.as_array();
-				Assert::AreEqual(arr.size(), io_stats.size());
-
-				for (size_t i = 0; i < arr.size(); ++i) {
-					const web::json::value &obj = arr[i];
-					Assert::AreEqual(arr.size(), io_stats.size());
-				}*/
 
 				request_stop = true;
 				Logger::WriteMessage("lambda: leave");
