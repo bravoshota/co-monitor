@@ -30,9 +30,11 @@ void init() noexcept {
 }
 void set_file(const std::string& filename) noexcept {
 	try {
-		auto file_logger = add_file_log(filename);
+		auto file_logger = add_file_log(
+			keywords::file_name = filename,
+			keywords::auto_flush = true
+		);
 		file_logger->set_formatter(logFmt);
-		file_logger->locked_backend()->auto_flush(true);
 
 		LOG(info) << "Added file log: " << filename;
 	} catch (const std::exception& e) {

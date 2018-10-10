@@ -10,7 +10,10 @@
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CrossMonitorClientTests
-{		
+{
+	/**
+	 * fill and return utils::data instance
+	 */
 	TEST_CLASS(application_client_UnitTests)
 	{
 		const crossover::monitor::data &getData() {
@@ -29,15 +32,12 @@ namespace CrossMonitorClientTests
 		}
 	public:
 		
-		TEST_METHOD(HavingZeroPeriod_ShouldThrow)
-		{
-			using crossover::monitor::client::application;
-
-			Assert::ExpectException<std::invalid_argument>([]() {
-				application a{ std::chrono::minutes(0) };
-			});
-		}
-
+		/**
+		* check utils::data::to_json()
+		*
+		* 1. call utils::data::to_json()
+		* 2. parse converted json::value and compare to each value held in utils::data
+		*/
 		TEST_METHOD(DataToJson)
 		{
 			const crossover::monitor::data &original_data = getData();
@@ -86,6 +86,27 @@ namespace CrossMonitorClientTests
 			}
 		}
 
+		/**
+		 * check application::run() if it throws exception on incorrect period value passed
+		 */
+		TEST_METHOD(HavingZeroPeriod_ShouldThrow)
+		{
+			using crossover::monitor::client::application;
+
+			Assert::ExpectException<std::invalid_argument>([]() {
+				application a{ std::chrono::minutes(0) };
+			});
+		}
+
+		/**
+		 * check application::run() functionality
+		 *
+		 * 1. initialize queries at the beginning
+		 * 2. call run method in different thread and pass the user defined handler
+		 *    to check correctness of calculated collected data
+		 * 3. request application::stop() after first check
+		 * 4. wait while run()'s thread is joined to main thread
+		 */
 		TEST_METHOD(CheckCollectData)
 		{
 			using namespace crossover::monitor;

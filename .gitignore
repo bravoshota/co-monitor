@@ -5,7 +5,6 @@ CrossMonitor.Client/CrossMonitor.Client.vcxproj.*
 CrossMonitor.Client/Debug/
 CrossMonitor.Shared/Debug/
 CrossMonitor.VC.*
-Readme.txt
 packages/
 Debug/
 Release/

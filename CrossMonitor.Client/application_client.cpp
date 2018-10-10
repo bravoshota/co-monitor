@@ -74,6 +74,7 @@ public:
 		} while (utils::interruptible_sleep(m_period, resolution, m_stop) !=
 			utils::interruptible_sleep_result::interrupted);
 
+		// no advantage here to place following lines into scope_exit
 		m_stop = false;
 		m_running = false;
 
