@@ -1,7 +1,6 @@
 CrossMonitor.Client.Tests/Debug/
 CrossMonitor.Client.Tests/x64/
 CrossMonitor.Client/*.log
-CrossMonitor.Client/CrossMonitor.Client.vcxproj.*
 CrossMonitor.Client/Debug/
 CrossMonitor.Shared/Debug/
 CrossMonitor.VC.*
@@ -9,3 +8,4 @@ packages/
 Debug/
 Release/
 .vs/
+*.user
