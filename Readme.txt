@@ -8,9 +8,10 @@ Project Notes:
   
 Tasks :
     1. Find and fix the bugs.
-	1.1. FIXED CRASH: delete pimpl_.get(); was called in application destructor which was held in smart pointer container
+	1.1. CRASH FIXED: delete pimpl_.get(); was called in application destructor which was held in smart pointer container
 	1.2. FIXED: on first record the cpu_usage was logged sometimes as 100%, sometimes as 0%, etc. The point was that CPU performance data query was immediately requested after initialize. So fixed it like: first log of cpu_usage is always 0, and on every next step the system has enough data to calculate a realistic value.
 	1.3. FIXED: logs were not printed to console output after calling log::set_file(..). added missing add_console_log call in log::init().
+	1.3.1. to keep log output attributes (timestamp, threadID, severity) I had to add add_common_attributes() call which requested additional project dependency: boost_atomic, which I've added to NuGet.
 	1.4. FIXED: added missing call for PdhCloseQuery on closing the app.
 	1.5. FIXED: added missing CTRL cases in closing handler (BOOL WINAPI handler_helper(DWORD type))
 	1.6. FIXED: changed deprecated array.as_string() to array.serialize()
@@ -20,6 +21,7 @@ Tasks :
 	2.1. DONE: added I/O statistics output for every (active) volume in windows OS. first output record are zeroes and every next output is difference statistics between 2 neighbor logging periods.
 	2.2. DONE: implemented UT CheckCollectData to check correctness of calculated collected data. it will check all performance values (including I/O operations)
     3. CrossMonitor.Client/application_client.cpp is implemented poorly. Refactor it to follow the best practices.
+	3.1. as already there is used implementation hiding paradigm, I didn't start totally refactoring, just improving:
 	3.1. moved remaining unnecessary implementation lines to "impl"
 	3.2. added possibility for user to handle collectedData event. it is useful also for writing UT for it.
 	3.3. to keep constructor signature I added default handler for this event. The default handler is used if the handler is not set during construction.
